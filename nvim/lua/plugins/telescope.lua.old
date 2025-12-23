@@ -1,0 +1,101 @@
+--------------------------------------------------
+-- TELESCOPE - Fuzzy finder
+--------------------------------------------------
+local function live_grep_with_patterns()
+  local telescope = require('telescope.builtin')
+  local actions = require('telescope.actions')
+  local action_state = require('telescope.actions.state')
+  
+  local file_patterns = {}
+  
+  telescope.live_grep({
+    additional_args = function()
+      local args = {
+        "--hidden",
+        "--no-ignore",
+        "-g", "!.env.*",
+        "-g", "!node_modules/**",
+      }
+      
+      -- Agregar patrones de archivo
+      for _, pattern in ipairs(file_patterns) do
+        table.insert(args, "-g")
+        table.insert(args, pattern)
+      end
+      
+      return args
+    end,
+    hidden = true,
+    no_ignore = false,
+    prompt_title = string.format("Live Grep %s(Ctrl+G: filter | Ctrl+z: reset)", 
+      #file_patterns > 0 and "[" .. table.concat(file_patterns, ", ") .. "] " or ""),
+    attach_mappings = function(prompt_bufnr, map)
+      -- Ctrl+G: Agregar patrón de archivo
+      map('i', '<C-g>', function()
+        vim.ui.input({ 
+          prompt = 'File pattern (e.g., *.php, app/**/*.php): '
+        }, function(pattern)
+          if pattern and pattern ~= '' then
+            table.insert(file_patterns, pattern)
+            -- Reiniciar la búsqueda con el nuevo patrón
+            actions.close(prompt_bufnr)
+            live_grep_with_patterns()
+          end
+        end)
+      end)
+      
+      -- Ctrl+R: Resetear patrones
+      map('i', '<C-z>', function()
+        file_patterns = {}
+        actions.close(prompt_bufnr)
+        live_grep_with_patterns()
+      end)
+      
+      return true
+    end,
+  })
+end
+
+vim.keymap.set('n', '<leader>fG', live_grep_with_patterns, { desc = 'Live grep with file filter' })
+
+return {
+  "nvim-telescope/telescope.nvim",
+  cmd = "Telescope",
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+  },
+  keys = {
+    { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find files" },
+    { "<leader>fg", "<cmd>Telescope live_grep<cr>", desc = "Live grep" },
+    { "<leader>fb", "<cmd>Telescope buffers<cr>", desc = "Buffers" },
+    { "<leader>fh", "<cmd>Telescope help_tags<cr>", desc = "Help tags" },
+    {
+      "<leader>fc",
+      function()
+        require('telescope.builtin').find_files({
+          cwd = '~/.config/nvim',
+          prompt_title = 'Config NVIM'
+        })
+      end,
+      desc = "Find files in Neovim config"
+    },
+    {
+      "<leader>fF",
+      function()
+        require('telescope.builtin').find_files({
+          prompt_title = 'Find Files (including hidden)',
+          hidden = true,           -- Mostrar archivos ocultos
+          no_ignore = true,        -- Ignorar .gitignore
+          follow = true,           -- Seguir symlinks
+          -- Opcional: excluir directorios específicos
+          file_ignore_patterns = {
+            "node_modules/",
+            ".git/",
+            "vendor/",
+          }
+        })
+      end,
+      desc = "Find files + hidden files"
+    },
+  },
+}

@@ -1,0 +1,36 @@
+# Archivos de estado de plugins
+lazy-lock.json
+
+# Directorio de plugins (gestionado por lazy.nvim)
+.lazy/
+
+# Backup files
+backup/
+backup_old_config/
+*.bak
+*.swp
+*.swo
+*~
+
+# LSP y Mason data
+mason/
+
+# Logs
+*.log
+
+# Archivos temporales de Neovim
+.neoconf.json
+.luarc.json
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de documentación temporal (ya eliminados)
+CHEATSHEET.md
+IMPROVEMENTS_SUMMARY.md
+INSTRUCCIONES_FINALES.md
+NAVIGATION_GUIDE.md
+PASOS_FINALES.md
+SETUP_VERIFICATION.md
+SOLUCION_APLICADA.md
