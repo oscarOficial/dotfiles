@@ -1,0 +1,24 @@
+# Yazi keymap configuration - WINDOWS
+# Key mappings for yazi (native only, no bash plugins)
+
+[mgr]
+prepend_keymap = [
+  # Note: zf and zg shortcuts are not available on Windows (require bash)
+  # Use native Yazi shortcuts instead:
+  #   / : Search files by name
+  #   f : Filter current directory
+  #   ? : Show help
+
+  # Smart filter (improved native filter for current dir)
+  { on = [ "F" ], run = "plugin smart-filter", desc = "Smart filter (current dir)" },
+
+  # Quick jump to char (vim-like f-motion)
+  { on = [ "f" ], run = "plugin jump-to-char", desc = "Jump to char (vim-like)" },
+
+]
+
+[input]
+# Keymaps for input
+
+[completion]
+# Keymaps for autocompletion

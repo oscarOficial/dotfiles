@@ -1,0 +1,22 @@
+[[plugin.deps]]
+use = "yazi-rs/plugins:jump-to-char"
+rev = "da5b695"
+hash = "ce67445ebb1bf3d97b8e44f50904b2c5"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:smart-filter"
+rev = "da5b695"
+hash = "407d19bc4fb46eff5fa8ff8337644847"
+
+[[plugin.deps]]
+use = "lpnh/fr"
+rev = "a60466e"
+hash = "a4e10b77673ed611dc3df29210343b1"
+
+[[plugin.deps]]
+use = "Shallow-Seek/fazif"
+rev = "6e10488"
+hash = "4daa9f8b301bb66d2759a9e9026c51a2"
+
+[flavor]
+deps = []

@@ -57,30 +57,36 @@ echo ""
 
 print_info "Selecciona qué instalar:"
 echo ""
-echo "  1) Todo (Neovim + dependencias)"
-echo "  2) Solo Neovim (sin dependencias)"
-echo "  3) Solo dependencias (sin configuración)"
-echo "  4) Salir"
+echo "  1) Todo (Neovim + Yazi + dependencias)"
+echo "  2) Solo Neovim (completo con dependencias)"
+echo "  3) Solo Yazi (completo con dependencias)"
+echo "  4) Neovim + Yazi (sin dependencias)"
+echo "  5) Salir"
 echo ""
-read -p "Opción [1-4]: " option
+read -p "Opción [1-5]: " option
 
 case $option in
     1)
         print_info "Instalando todo..."
-        INSTALL_DEPS=true
         INSTALL_NVIM=true
+        INSTALL_YAZI=true
         ;;
     2)
-        print_info "Instalando solo configuración de Neovim..."
-        INSTALL_DEPS=false
+        print_info "Instalando solo Neovim..."
         INSTALL_NVIM=true
+        INSTALL_YAZI=false
         ;;
     3)
-        print_info "Instalando solo dependencias..."
-        INSTALL_DEPS=true
+        print_info "Instalando solo Yazi..."
         INSTALL_NVIM=false
+        INSTALL_YAZI=true
         ;;
     4)
+        print_info "Instalando Neovim + Yazi (asumiendo dependencias ya instaladas)..."
+        INSTALL_NVIM=true
+        INSTALL_YAZI=true
+        ;;
+    5)
         print_info "Saliendo..."
         exit 0
         ;;
@@ -93,11 +99,11 @@ esac
 echo ""
 
 #################################################
-# INSTALAR DEPENDENCIAS
+# INSTALAR NEOVIM
 #################################################
 
-if [ "$INSTALL_DEPS" = true ]; then
-    print_info "Ejecutando instalador de dependencias de Neovim..."
+if [ "$INSTALL_NVIM" = true ]; then
+    print_info "Ejecutando instalador de Neovim..."
     echo ""
 
     if [ -f "$DOTFILES_DIR/nvim/install.sh" ]; then
@@ -113,39 +119,25 @@ if [ "$INSTALL_DEPS" = true ]; then
 fi
 
 #################################################
-# CREAR SYMLINKS DE CONFIGURACIÓN
+# INSTALAR YAZI
 #################################################
 
-if [ "$INSTALL_NVIM" = true ]; then
-    print_info "Creando symlinks de configuración..."
+if [ "$INSTALL_YAZI" = true ]; then
+    print_info "Ejecutando instalador de Yazi..."
     echo ""
 
-    # Neovim
-    NVIM_CONFIG_DIR="$HOME/.config/nvim"
-    NVIM_DOTFILES_DIR="$DOTFILES_DIR/nvim"
-
-    # Backup de configuración existente
-    if [ -d "$NVIM_CONFIG_DIR" ] && [ ! -L "$NVIM_CONFIG_DIR" ]; then
-        print_warning "Encontrada configuración existente de Neovim"
-        BACKUP_DIR="$HOME/.config/nvim.backup.$(date +%Y%m%d_%H%M%S)"
-        print_info "Creando backup en: $BACKUP_DIR"
-        mv "$NVIM_CONFIG_DIR" "$BACKUP_DIR"
-        print_success "Backup creado"
+    if [ -f "$DOTFILES_DIR/yazi/install.sh" ]; then
+        cd "$DOTFILES_DIR/yazi"
+        bash install.sh
+        cd "$DOTFILES_DIR"
+    else
+        print_error "No se encontró yazi/install.sh"
+        exit 1
     fi
-
-    # Eliminar symlink existente
-    if [ -L "$NVIM_CONFIG_DIR" ]; then
-        print_info "Eliminando symlink existente..."
-        rm "$NVIM_CONFIG_DIR"
-    fi
-
-    # Crear symlink
-    print_info "Creando symlink: $NVIM_CONFIG_DIR -> $NVIM_DOTFILES_DIR"
-    ln -sf "$NVIM_DOTFILES_DIR" "$NVIM_CONFIG_DIR"
-    print_success "Symlink de Neovim creado"
 
     echo ""
 fi
+
 
 #################################################
 # RESUMEN FINAL
@@ -155,13 +147,21 @@ print_success "¡Instalación completada!"
 echo ""
 
 if [ "$INSTALL_NVIM" = true ]; then
-    print_info "Configuración de Neovim instalada en:"
-    echo "  ~/.config/nvim -> $NVIM_DOTFILES_DIR"
+    print_info "✓ Neovim instalado"
+    echo "  Configuración en: ~/.config/nvim"
+    echo "  Próximos pasos:"
+    echo "    - Ejecuta 'nvim' para abrir Neovim"
+    echo "    - Los plugins se instalarán automáticamente"
     echo ""
-    print_info "Próximos pasos para Neovim:"
-    echo "  1. Abre Neovim: nvim"
-    echo "  2. Lazy.nvim instalará automáticamente los plugins"
-    echo "  3. Los LSP servers se instalarán vía Mason automáticamente"
+fi
+
+if [ "$INSTALL_YAZI" = true ]; then
+    print_info "✓ Yazi instalado"
+    echo "  Configuración en: ~/.config/yazi"
+    echo "  Próximos pasos:"
+    echo "    - Ejecuta 'yazi' para abrir el file manager"
+    echo "    - Usa 'zf' para buscar archivos recursivamente"
+    echo "    - Usa 'zg' para buscar por contenido"
     echo ""
 fi
 

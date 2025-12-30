@@ -1,0 +1,7 @@
+# Yazi temporary files
+*.log
+.tmp/
+tmp/
+
+# Plugin downloads during development
+plugins/.cache/

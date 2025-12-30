@@ -56,31 +56,37 @@ Write-Host ""
 
 Write-Info "Selecciona qué instalar:"
 Write-Host ""
-Write-Host "  1) Todo (Neovim + dependencias)"
-Write-Host "  2) Solo Neovim (sin dependencias)"
-Write-Host "  3) Solo dependencias (sin configuración)"
-Write-Host "  4) Salir"
+Write-Host "  1) Todo (Neovim + Yazi + dependencias)"
+Write-Host "  2) Solo Neovim (completo con dependencias)"
+Write-Host "  3) Solo Yazi (básico, sin plugins bash)"
+Write-Host "  4) Neovim + Yazi (sin dependencias)"
+Write-Host "  5) Salir"
 Write-Host ""
-$option = Read-Host "Opción [1-4]"
+$option = Read-Host "Opción [1-5]"
 
-$INSTALL_DEPS = $false
 $INSTALL_NVIM = $false
+$INSTALL_YAZI = $false
 
 switch ($option) {
     "1" {
         Write-Info "Instalando todo..."
-        $INSTALL_DEPS = $true
         $INSTALL_NVIM = $true
+        $INSTALL_YAZI = $true
     }
     "2" {
-        Write-Info "Instalando solo configuración de Neovim..."
+        Write-Info "Instalando solo Neovim..."
         $INSTALL_NVIM = $true
     }
     "3" {
-        Write-Info "Instalando solo dependencias..."
-        $INSTALL_DEPS = $true
+        Write-Info "Instalando solo Yazi..."
+        $INSTALL_YAZI = $true
     }
     "4" {
+        Write-Info "Instalando Neovim + Yazi (asumiendo dependencias ya instaladas)..."
+        $INSTALL_NVIM = $true
+        $INSTALL_YAZI = $true
+    }
+    "5" {
         Write-Info "Saliendo..."
         exit 0
     }
@@ -93,11 +99,11 @@ switch ($option) {
 Write-Host ""
 
 #################################################
-# INSTALAR DEPENDENCIAS
+# INSTALAR NEOVIM
 #################################################
 
-if ($INSTALL_DEPS) {
-    Write-Info "Ejecutando instalador de dependencias de Neovim..."
+if ($INSTALL_NVIM) {
+    Write-Info "Ejecutando instalador de Neovim..."
     Write-Host ""
 
     $nvimInstaller = Join-Path $DOTFILES_DIR "nvim\install.ps1"
@@ -116,51 +122,28 @@ if ($INSTALL_DEPS) {
 }
 
 #################################################
-# CREAR SYMLINKS DE CONFIGURACIÓN
+# INSTALAR YAZI
 #################################################
 
-if ($INSTALL_NVIM) {
-    Write-Info "Creando symlinks de configuración..."
+if ($INSTALL_YAZI) {
+    Write-Info "Ejecutando instalador de Yazi..."
     Write-Host ""
 
-    # Neovim
-    $NVIM_CONFIG_DIR = "$env:LOCALAPPDATA\nvim"
-    $NVIM_DOTFILES_DIR = Join-Path $DOTFILES_DIR "nvim"
+    $yaziInstaller = Join-Path $DOTFILES_DIR "yazi\install.ps1"
 
-    # Backup de configuración existente
-    if ((Test-Path $NVIM_CONFIG_DIR) -and (-not (Get-Item $NVIM_CONFIG_DIR).LinkType)) {
-        Write-Warning-Custom "Encontrada configuración existente de Neovim"
-        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        $BACKUP_DIR = "$env:LOCALAPPDATA\nvim.backup.$timestamp"
-        Write-Info "Creando backup en: $BACKUP_DIR"
-        Move-Item $NVIM_CONFIG_DIR $BACKUP_DIR -Force
-        Write-Success "Backup creado"
+    if (Test-Path $yaziInstaller) {
+        Push-Location (Join-Path $DOTFILES_DIR "yazi")
+        & $yaziInstaller
+        Pop-Location
     }
-
-    # Eliminar symlink existente
-    if (Test-Path $NVIM_CONFIG_DIR) {
-        if ((Get-Item $NVIM_CONFIG_DIR).LinkType -eq "SymbolicLink") {
-            Write-Info "Eliminando symlink existente..."
-            Remove-Item $NVIM_CONFIG_DIR -Force
-        }
-    }
-
-    # Crear symlink (requiere permisos de administrador en algunas versiones de Windows)
-    Write-Info "Creando symlink: $NVIM_CONFIG_DIR -> $NVIM_DOTFILES_DIR"
-
-    try {
-        New-Item -ItemType SymbolicLink -Path $NVIM_CONFIG_DIR -Target $NVIM_DOTFILES_DIR -Force | Out-Null
-        Write-Success "Symlink de Neovim creado"
-    }
-    catch {
-        Write-Warning-Custom "No se pudo crear symlink (puede requerir permisos de administrador)"
-        Write-Info "Creando junction en su lugar..."
-        cmd /c mklink /J "$NVIM_CONFIG_DIR" "$NVIM_DOTFILES_DIR"
-        Write-Success "Junction de Neovim creada"
+    else {
+        Write-Error-Custom "No se encontró yazi\install.ps1"
+        exit 1
     }
 
     Write-Host ""
 }
+
 
 #################################################
 # RESUMEN FINAL
@@ -170,13 +153,21 @@ Write-Success "¡Instalación completada!"
 Write-Host ""
 
 if ($INSTALL_NVIM) {
-    Write-Info "Configuración de Neovim instalada en:"
-    Write-Host "  $env:LOCALAPPDATA\nvim -> $NVIM_DOTFILES_DIR"
+    Write-Info "✓ Neovim instalado"
+    Write-Host "  Configuración en: $env:LOCALAPPDATA\nvim"
+    Write-Host "  Próximos pasos:"
+    Write-Host "    - Ejecuta 'nvim' para abrir Neovim"
+    Write-Host "    - Los plugins se instalarán automáticamente"
     Write-Host ""
-    Write-Info "Próximos pasos para Neovim:"
-    Write-Host "  1. Abre Neovim: nvim"
-    Write-Host "  2. Lazy.nvim instalará automáticamente los plugins"
-    Write-Host "  3. Los LSP servers se instalarán vía Mason automáticamente"
+}
+
+if ($INSTALL_YAZI) {
+    Write-Info "✓ Yazi instalado"
+    Write-Host "  Configuración en: $env:APPDATA\yazi\config"
+    Write-Host "  Próximos pasos:"
+    Write-Host "    - Ejecuta 'yazi' para abrir el file manager"
+    Write-Host "    - Usa '/' para buscar archivos (nativo)"
+    Write-Host "    - Los plugins bash NO están disponibles en Windows"
     Write-Host ""
 }
 

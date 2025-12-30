@@ -14,6 +14,16 @@ Configuración completa de Neovim con soporte para:
 
 [Ver documentación completa de Neovim →](./nvim/README.md)
 
+### [Yazi](./yazi/)
+
+File manager de terminal ultrarrápido con soporte para:
+- Navegación vim-like, Preview de archivos
+- **Linux**: Búsqueda avanzada con fd + fzf + ripgrep (plugins bash)
+- **Windows**: Funcionalidad básica (sin plugins bash)
+- **100% Funcional** en ambos sistemas (con diferencias de features)
+
+[Ver documentación completa de Yazi →](./yazi/README.md)
+
 ### Próximamente
 
 - [ ] Zsh/Bash configuration
@@ -30,8 +40,15 @@ Configuración completa de Neovim con soporte para:
 git clone https://github.com/oscarOficial/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# Instalar Neovim y todas las dependencias
+# Ejecutar instalador interactivo
 ./install.sh
+
+# Opciones disponibles:
+#   1) Todo (Neovim + Yazi + dependencias)
+#   2) Solo Neovim (completo con dependencias)
+#   3) Solo Yazi (completo con dependencias)
+#   4) Neovim + Yazi (sin dependencias)
+#   5) Salir
 ```
 
 ### Windows
@@ -41,8 +58,15 @@ cd ~/dotfiles
 git clone https://github.com/oscarOficial/dotfiles.git $env:USERPROFILE\dotfiles
 cd $env:USERPROFILE\dotfiles
 
-# Instalar Neovim y todas las dependencias
+# Ejecutar instalador interactivo
 .\install.ps1
+
+# Opciones disponibles:
+#   1) Todo (Neovim + Yazi + dependencias)
+#   2) Solo Neovim (completo con dependencias)
+#   3) Solo Yazi (básico, sin plugins bash)
+#   4) Neovim + Yazi (sin dependencias)
+#   5) Salir
 ```
 
 ## 📋 Instalación Manual por Componente
@@ -58,6 +82,18 @@ cd ~/dotfiles/nvim
 
 # Windows
 cd $env:USERPROFILE\dotfiles\nvim
+.\install.ps1
+```
+
+### Yazi
+
+```bash
+# Linux
+cd ~/dotfiles/yazi
+./install.sh
+
+# Windows
+cd $env:USERPROFILE\dotfiles\yazi
 .\install.ps1
 ```
 
@@ -94,6 +130,14 @@ dotfiles/
 │       ├── config/
 │       ├── plugins/
 │       └── utils/
+├── yazi/                    # Configuración de Yazi
+│   ├── README.md            # Documentación de Yazi
+│   ├── install.sh           # Instalador de Yazi (Linux)
+│   ├── install.ps1          # Instalador de Yazi (Windows)
+│   ├── yazi.toml            # Configuración principal
+│   ├── keymap-linux.toml    # Keymaps con plugins
+│   ├── keymap-windows.toml  # Keymaps básicos
+│   └── plugins/             # Plugins (solo Linux)
 └── docs/                    # Documentación adicional
     ├── screenshots/
     └── guides/
