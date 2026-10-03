@@ -1,0 +1,4 @@
+# Finales de línea LF en todo el repo, también al clonarlo en Windows.
+# Sin esto, Git en Windows puede convertir a CRLF y romper install.sh y .tmux.conf.
+* text=auto eol=lf
+*.ps1 text eol=crlf

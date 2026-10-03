@@ -1,207 +1,117 @@
-# 🏠 Dotfiles de Oscar
+# dotfiles
 
-Configuración personal de herramientas de desarrollo para Windows y Linux.
-
-## 📦 Contenido
-
-### [Neovim](./nvim/)
-
-Configuración completa de Neovim con soporte para:
-- PHP (Laravel), JavaScript/TypeScript, Lua, Java, Twig
-- LSP completo (Intelephense, TypeScript, Lua, Java)
-- Autocompletado, Fuzzy finder, File manager integrado
-- **100% Portable** entre Windows y Linux
-
-[Ver documentación completa de Neovim →](./nvim/README.md)
-
-### [Yazi](./yazi/)
-
-File manager de terminal ultrarrápido con soporte para:
-- Navegación vim-like, Preview de archivos
-- **Linux**: Búsqueda avanzada con fd + fzf + ripgrep (plugins bash)
-- **Windows**: Funcionalidad básica (sin plugins bash)
-- **100% Funcional** en ambos sistemas (con diferencias de features)
-
-[Ver documentación completa de Yazi →](./yazi/README.md)
-
-### Próximamente
-
-- [ ] Zsh/Bash configuration
-- [ ] Tmux configuration
-- [ ] Git configuration
-- [ ] Terminal (Alacritty/WezTerm) configuration
-
-## 🚀 Instalación Rápida
-
-### Linux/Ubuntu
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/oscarOficial/dotfiles.git ~/dotfiles
-cd ~/dotfiles
-
-# Ejecutar instalador interactivo
-./install.sh
-
-# Opciones disponibles:
-#   1) Todo (Neovim + Yazi + dependencias)
-#   2) Solo Neovim (completo con dependencias)
-#   3) Solo Yazi (completo con dependencias)
-#   4) Neovim + Yazi (sin dependencias)
-#   5) Salir
-```
-
-### Windows
-
-```powershell
-# Clonar el repositorio
-git clone https://github.com/oscarOficial/dotfiles.git $env:USERPROFILE\dotfiles
-cd $env:USERPROFILE\dotfiles
-
-# Ejecutar instalador interactivo
-.\install.ps1
-
-# Opciones disponibles:
-#   1) Todo (Neovim + Yazi + dependencias)
-#   2) Solo Neovim (completo con dependencias)
-#   3) Solo Yazi (básico, sin plugins bash)
-#   4) Neovim + Yazi (sin dependencias)
-#   5) Salir
-```
-
-## 📋 Instalación Manual por Componente
-
-Si prefieres instalar solo ciertas configuraciones:
-
-### Neovim
-
-```bash
-# Linux
-cd ~/dotfiles/nvim
-./install.sh
-
-# Windows
-cd $env:USERPROFILE\dotfiles\nvim
-.\install.ps1
-```
-
-### Yazi
-
-```bash
-# Linux
-cd ~/dotfiles/yazi
-./install.sh
-
-# Windows
-cd $env:USERPROFILE\dotfiles\yazi
-.\install.ps1
-```
-
-## 🛠️ Requisitos
-
-### Linux/Ubuntu
-
-- Ubuntu 20.04+ (o distribución basada en Debian)
-- Git
-- Curl
-- Permisos sudo
-
-### Windows
-
-- Windows 10/11
-- PowerShell 5.1+
-- Git
-- winget (Windows Package Manager)
-
-## 📂 Estructura del Repositorio
+Configuración compartida entre Windows y Ubuntu (también Ubuntu en WSL).
 
 ```
 dotfiles/
-├── README.md                 # Este archivo
-├── LICENSE                   # Licencia MIT
-├── install.sh               # Instalador principal (Linux)
-├── install.ps1              # Instalador principal (Windows)
-├── nvim/                    # Configuración de Neovim
-│   ├── README.md            # Documentación de Neovim
-│   ├── install.sh           # Instalador de Neovim (Linux)
-│   ├── install.ps1          # Instalador de Neovim (Windows)
-│   ├── init.lua             # Configuración principal
-│   └── lua/                 # Módulos Lua
-│       ├── config/
-│       ├── plugins/
-│       └── utils/
-├── yazi/                    # Configuración de Yazi
-│   ├── README.md            # Documentación de Yazi
-│   ├── install.sh           # Instalador de Yazi (Linux)
-│   ├── install.ps1          # Instalador de Yazi (Windows)
-│   ├── yazi.toml            # Configuración principal
-│   ├── keymap-linux.toml    # Keymaps con plugins
-│   ├── keymap-windows.toml  # Keymaps básicos
-│   └── plugins/             # Plugins (solo Linux)
-└── docs/                    # Documentación adicional
-    ├── screenshots/
-    └── guides/
+├── nvim/               Neovim (kickstart.nvim), común a los dos sistemas
+│   └── lua/custom/plugins/os.lua   ajustes por sistema (shell, portapapeles WSL)
+├── linux/.tmux.conf    tmux (solo Linux/WSL)
+├── windows/apps.ps1    instala las aplicaciones en un Windows nuevo
+├── install.sh          Ubuntu: instala Neovim, tmux y dependencias, y enlaza la config
+└── install.ps1         Windows: enlaza la config
 ```
 
-## 🔄 Actualización
+## Windows nuevo
 
-Para actualizar las configuraciones:
+PowerShell **como administrador**. Ejecuta cada comando por separado:
+
+```powershell
+git clone https://github.com/<tu-usuario>/dotfiles $HOME\dotfiles
+cd $HOME\dotfiles
+Set-ExecutionPolicy Bypass -Scope Process -Force
+.\windows\apps.ps1
+```
+
+Después, reinicia el equipo y en Windows Terminal elige la fuente
+`JetBrainsMono Nerd Font`.
+
+## Ubuntu / WSL
 
 ```bash
-# Linux
-cd ~/dotfiles
-git pull
-./install.sh
-
-# Windows
-cd $env:USERPROFILE\dotfiles
-git pull
-.\install.ps1
+git clone https://github.com/<tu-usuario>/dotfiles ~/dotfiles
+cd ~/dotfiles && ./install.sh
 ```
 
-## 🎨 Screenshots
+## Día a día
 
-### Neovim
+La configuración está enlazada, así que se edita en su sitio (`nvim`, `~/.tmux.conf`)
+y el cambio ya está en el repo. Solo falta `git commit` y `git push`.
 
-*(Agrega aquí capturas de pantalla de tu setup)*
+- Neovim: `:lua vim.pack.update()` actualiza los plugins; sube `nvim/nvim-pack-lock.json`
+  para tener las mismas versiones en los dos sistemas.
+- tmux: `Ctrl+b r` recarga la configuración.
 
-## 🤝 Contribuir
+## Añadir programas
 
-Si encuentras algún problema o tienes sugerencias, siéntete libre de:
+- **Windows:** busca el ID con `winget search nombre` y añádelo a la lista `$apps`
+  de `windows/apps.ps1`. Si no está en winget, prueba `choco search nombre` y
+  añádelo a la línea de `choco install`.
+- **Ubuntu:** añade el paquete a la línea `sudo apt install -y ...` de `install.sh`.
+- **Su configuración:** mueve el archivo al repo (`linux/` o `windows/`) y añade
+  una línea `link` en `install.sh` o `Link` en `install.ps1`.
 
-1. Abrir un [issue](https://github.com/oscarOficial/dotfiles/issues)
-2. Enviar un pull request
-3. Compartir tu feedback
+## Claves SSH en Windows
 
-## 📝 Notas
+Cada equipo tiene su propia clave. Las claves privadas **nunca** van al repo.
 
-### Filosofía
+1. Elegir el nombre de la clave y crearla (sin administrador):
+   ```powershell
+   $KEY = "nombre_clave"
+   ssh-keygen -t ed25519 -C "nombre-equipo" -f $HOME\.ssh\$KEY
+   ```
 
-Estas configuraciones siguen estos principios:
+2. Activar el agente SSH (PowerShell **como administrador**, un comando cada vez):
+   ```powershell
+   Set-Service ssh-agent -StartupType Automatic
+   Start-Service ssh-agent
+   ```
+   Si no encuentra el servicio, instala el cliente OpenSSH (como administrador):
+   `Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0`
 
-- ✅ **Portabilidad**: Funcionan en Windows y Linux sin cambios
-- ✅ **Automatización**: Todo se instala con un comando
-- ✅ **Minimalismo**: Solo lo esencial, sin bloat
-- ✅ **Documentación**: Todo está documentado
-- ✅ **Comunidad**: Basado en las mejores prácticas
+3. Cargar la clave en el agente (sin administrador). Pide la frase solo esta vez:
+   ```powershell
+   ssh-add $HOME\.ssh\$KEY
+   ssh-add -l
+   ```
 
-### Inspiración
+4. Indicar a SSH qué clave usar para GitHub, en `$HOME\.ssh\config` (sin extensión).
+   Sustituye `nombre_clave` por el nombre real:
+   ```
+   Host github.com
+       HostName github.com
+       User git
+       IdentityFile ~/.ssh/nombre_clave
+       IdentitiesOnly yes
+   ```
 
-Este repositorio está inspirado en:
-- [craftzdog/dotfiles-public](https://github.com/craftzdog/dotfiles-public)
-- [ThePrimeagen/.dotfiles](https://github.com/ThePrimeagen/.dotfiles)
-- [jesseduffield/dotfiles](https://github.com/jesseduffield/dotfiles)
+5. Copiar la clave pública y añadirla en GitHub → Settings → SSH and GPG keys:
+   ```powershell
+   Get-Content $HOME\.ssh\$KEY.pub | Set-Clipboard
+   ```
 
-## 📄 Licencia
+6. Hacer que Git use el SSH de Windows (para que no pida la frase):
+   ```powershell
+   git config --global core.sshCommand "C:/Windows/System32/OpenSSH/ssh.exe"
+   ```
 
-MIT License - siéntete libre de usar y modificar como quieras.
+7. Probar la conexión:
+   ```powershell
+   ssh -T git@github.com
+   ```
 
-## 👤 Autor
+> La variable `$KEY` solo existe en la ventana de PowerShell donde la defines.
+> Si abres otra ventana, vuelve a definirla antes de usar los comandos.
 
-**Oscar** - [@oscarOficial](https://github.com/oscarOficial)
+### Problemas frecuentes
+- `Permission denied (publickey)`: comprueba con `ssh-add -l` que la clave está cargada, y que el `config` apunta a ella.
+- Pide la frase todo el rato: el servicio `ssh-agent` no está en marcha (paso 2), o falta el paso 6.
 
----
+## Problemas frecuentes en Windows
 
-**¡Feliz coding! 🚀**
-
-<sub>Si encuentras útil este repositorio, considera darle una ⭐</sub>
+- **`tree-sitter build` falla buscando `cl.exe`:** falta la variable `CC=gcc`
+  (`apps.ps1` ya la crea). A mano:
+  `[Environment]::SetEnvironmentVariable("CC", "gcc", "User")`, abre una terminal
+  nueva y ejecuta `:TSUpdate` en Neovim.
+- **`Set-ExecutionPolicy` da error de parámetro:** ejecútalo solo, en su propia
+  línea, y después lanza el script.

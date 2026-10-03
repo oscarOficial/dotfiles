@@ -1,174 +1,80 @@
-#!/bin/bash
-#################################################
-# INSTALADOR PRINCIPAL DE DOTFILES
-# Para Ubuntu/Debian/Linux
-#################################################
+#!/usr/bin/env bash
+# install.sh — Ubuntu (o Ubuntu en WSL)
+# Instala Neovim (versión estable oficial), tmux y lo que necesita la config,
+# y enlaza los dotfiles del repo a su sitio.
+#   Uso:  cd ~/dotfiles && ./install.sh
+set -euo pipefail
 
-set -e  # Exit on error
+DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+IS_WSL=false; grep -qi microsoft /proc/version && IS_WSL=true
 
-# Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Función para imprimir mensajes con color
-print_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[OK]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Obtener directorio del script
-DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-print_info "Dotfiles directory: $DOTFILES_DIR"
-echo ""
-
-#################################################
-# BANNER
-#################################################
-
-cat << "EOF"
-╔══════════════════════════════════════════════════╗
-║                                                  ║
-║        🏠  DOTFILES INSTALLATION                 ║
-║           Oscar's Dev Environment               ║
-║                                                  ║
-╚══════════════════════════════════════════════════╝
-EOF
-
-echo ""
-
-#################################################
-# MENÚ DE INSTALACIÓN
-#################################################
-
-print_info "Selecciona qué instalar:"
-echo ""
-echo "  1) Todo (Neovim + Yazi + dependencias)"
-echo "  2) Solo Neovim (completo con dependencias)"
-echo "  3) Solo Yazi (completo con dependencias)"
-echo "  4) Neovim + Yazi (sin dependencias)"
-echo "  5) Salir"
-echo ""
-read -p "Opción [1-5]: " option
-
-case $option in
-    1)
-        print_info "Instalando todo..."
-        INSTALL_NVIM=true
-        INSTALL_YAZI=true
-        ;;
-    2)
-        print_info "Instalando solo Neovim..."
-        INSTALL_NVIM=true
-        INSTALL_YAZI=false
-        ;;
-    3)
-        print_info "Instalando solo Yazi..."
-        INSTALL_NVIM=false
-        INSTALL_YAZI=true
-        ;;
-    4)
-        print_info "Instalando Neovim + Yazi (asumiendo dependencias ya instaladas)..."
-        INSTALL_NVIM=true
-        INSTALL_YAZI=true
-        ;;
-    5)
-        print_info "Saliendo..."
-        exit 0
-        ;;
-    *)
-        print_error "Opción inválida"
-        exit 1
-        ;;
+case "$(uname -m)" in
+  x86_64)  NVIM_ARCH=x86_64; TS_ARCH=x64 ;;
+  aarch64) NVIM_ARCH=arm64;  TS_ARCH=arm64 ;;
+  *) echo "Arquitectura no soportada: $(uname -m)"; exit 1 ;;
 esac
 
-echo ""
+info() { printf '\n\033[1;36m==> %s\033[0m\n' "$1"; }
 
-#################################################
-# INSTALAR NEOVIM
-#################################################
+# --- Paquetes ----------------------------------------------------------------
+info "Instalando paquetes"
+sudo apt update
+sudo apt install -y git curl unzip make gcc ripgrep fd-find xclip tmux fontconfig
 
-if [ "$INSTALL_NVIM" = true ]; then
-    print_info "Ejecutando instalador de Neovim..."
-    echo ""
+mkdir -p "$HOME/.local/bin"
+# En Ubuntu fd se llama fdfind
+ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
 
-    if [ -f "$DOTFILES_DIR/nvim/install.sh" ]; then
-        cd "$DOTFILES_DIR/nvim"
-        bash install.sh
-        cd "$DOTFILES_DIR"
-    else
-        print_error "No se encontró nvim/install.sh"
-        exit 1
-    fi
-
-    echo ""
+# tree-sitter CLI: del repositorio si existe, si no el binario oficial
+if ! sudo apt install -y tree-sitter-cli 2>/dev/null; then
+  info "Instalando tree-sitter CLI desde GitHub"
+  curl -fL "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-${TS_ARCH}.gz" \
+    | gunzip > "$HOME/.local/bin/tree-sitter"
+  chmod +x "$HOME/.local/bin/tree-sitter"
 fi
 
-#################################################
-# INSTALAR YAZI
-#################################################
+# --- Neovim estable (el de apt suele estar desfasado) --------------------------
+info "Instalando Neovim estable"
+tmp="$(mktemp -d)"
+curl -fL -o "$tmp/nvim.tar.gz" \
+  "https://github.com/neovim/neovim/releases/download/stable/nvim-linux-${NVIM_ARCH}.tar.gz"
+sudo rm -rf "/opt/nvim-linux-${NVIM_ARCH}"
+sudo tar -C /opt -xzf "$tmp/nvim.tar.gz"
+sudo ln -sf "/opt/nvim-linux-${NVIM_ARCH}/bin/nvim" /usr/local/bin/nvim
+rm -rf "$tmp"
 
-if [ "$INSTALL_YAZI" = true ]; then
-    print_info "Ejecutando instalador de Yazi..."
-    echo ""
-
-    if [ -f "$DOTFILES_DIR/yazi/install.sh" ]; then
-        cd "$DOTFILES_DIR/yazi"
-        bash install.sh
-        cd "$DOTFILES_DIR"
-    else
-        print_error "No se encontró yazi/install.sh"
-        exit 1
-    fi
-
-    echo ""
+# --- Nerd Font (en WSL la fuente se instala en Windows con apps.ps1) ----------
+if ! $IS_WSL && ! fc-list | grep -qi "JetBrainsMono Nerd"; then
+  info "Instalando JetBrainsMono Nerd Font"
+  mkdir -p "$HOME/.local/share/fonts/JetBrainsMono"
+  curl -fL "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz" \
+    | tar -xJ -C "$HOME/.local/share/fonts/JetBrainsMono"
+  fc-cache -f >/dev/null
 fi
 
+# --- Enlaces simbólicos --------------------------------------------------------
+# Si ya existe un archivo real, se guarda una copia .bak antes de enlazar.
+link() {
+  local src="$1" dst="$2"
+  mkdir -p "$(dirname "$dst")"
+  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    mv "$dst" "$dst.bak.$(date +%Y%m%d%H%M%S)"
+    echo "Copia de seguridad: $dst.bak.*"
+  fi
+  ln -sfn "$src" "$dst"
+  echo "Enlazado: $dst -> $src"
+}
 
-#################################################
-# RESUMEN FINAL
-#################################################
+info "Enlazando dotfiles"
+link "$DOTFILES/nvim"             "$HOME/.config/nvim"
+link "$DOTFILES/linux/.tmux.conf" "$HOME/.tmux.conf"
+[ -f "$DOTFILES/linux/.bashrc" ] && link "$DOTFILES/linux/.bashrc" "$HOME/.bashrc"
 
-print_success "¡Instalación completada!"
-echo ""
-
-if [ "$INSTALL_NVIM" = true ]; then
-    print_info "✓ Neovim instalado"
-    echo "  Configuración en: ~/.config/nvim"
-    echo "  Próximos pasos:"
-    echo "    - Ejecuta 'nvim' para abrir Neovim"
-    echo "    - Los plugins se instalarán automáticamente"
-    echo ""
+# Asegura ~/.local/bin en el PATH
+if ! grep -q '.local/bin' "$HOME/.bashrc" 2>/dev/null; then
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
 fi
 
-if [ "$INSTALL_YAZI" = true ]; then
-    print_info "✓ Yazi instalado"
-    echo "  Configuración en: ~/.config/yazi"
-    echo "  Próximos pasos:"
-    echo "    - Ejecuta 'yazi' para abrir el file manager"
-    echo "    - Usa 'zf' para buscar archivos recursivamente"
-    echo "    - Usa 'zg' para buscar por contenido"
-    echo ""
-fi
-
-print_info "Para actualizar en el futuro:"
-echo "  cd $DOTFILES_DIR"
-echo "  git pull"
-echo "  ./install.sh"
-echo ""
-
-print_success "¡Todo listo! 🚀"
+info "Listo"
+echo "Abre una terminal nueva y ejecuta: nvim   (la primera vez descarga los plugins)"
+$IS_WSL || echo "Selecciona 'JetBrainsMono Nerd Font' en tu terminal para ver los iconos."
