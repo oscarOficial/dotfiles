@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# md2pdf — Exporta un Markdown a PDF con pandoc + XeLaTeX.
+# Equivalente a la función md2pdf de windows/profile.ps1.
+# install.sh lo enlaza a ~/.local/bin/md2pdf
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Uso: md2pdf <input.md> [-o salida.pdf] [-a autor] [-d fecha] [-t título]
+            [--no-author] [--with-date] [--no-pages] [--toc] [--numbered]
+            [-m margen] [-f tamaño_pt]
+
+Los metadatos (título, autor, fecha) se leen del YAML del propio .md; las
+opciones solo los sobrescriben u ocultan. Por defecto NO se imprime fecha:
+usa --with-date para la del YAML o -d para una explícita. El idioma es
+español salvo que el YAML indique otro "lang".
+Los bloques ```mermaid se convierten en diagramas (requiere mmdc).
+
+Ejemplos:
+  md2pdf apuntes.md
+  md2pdf apuntes.md -o entrega.pdf -a "Oscar" --toc --numbered -m 2cm -f 11
+EOF
+}
+
+input= output= author= date= title= margin= fontsize=
+no_author=false with_date=false no_pages=false toc=false numbered=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)   usage; exit 0 ;;
+    -o) output=$2; shift 2 ;;
+    -a) author=$2; shift 2 ;;
+    -d) date=$2; shift 2 ;;
+    -t) title=$2; shift 2 ;;
+    -m) margin=$2; shift 2 ;;
+    -f) fontsize=$2; shift 2 ;;
+    --no-author) no_author=true; shift ;;
+    --with-date) with_date=true; shift ;;
+    --no-pages)  no_pages=true; shift ;;
+    --toc)       toc=true; shift ;;
+    --numbered)  numbered=true; shift ;;
+    -*) printf 'md2pdf: opción desconocida: %s (md2pdf -h)\n' "$1" >&2; exit 2 ;;
+    *)  input=$1; shift ;;
+  esac
+done
+
+if [[ -z "$input" || ! -f "$input" ]]; then
+  printf 'md2pdf: indica un fichero .md existente (md2pdf -h)\n' >&2
+  exit 2
+fi
+if ! command -v pandoc >/dev/null 2>&1 || ! command -v xelatex >/dev/null 2>&1; then
+  printf 'md2pdf: faltan pandoc y/o xelatex; ejecuta install.sh\n' >&2
+  exit 127
+fi
+[[ -n "$output" ]] || output="${input%.*}.pdf"
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+header="$tmp/header.tex"
+# Idioma por defecto ("Índice" en vez de "Contents", guionado...). Va en un
+# fichero de metadatos y no con -M para que el "lang" del YAML del .md mande.
+defaults="$tmp/defaults.yaml"
+pandoc_args=()
+
+# Envuelve líneas largas en bloques de código (comandos, etc.) en vez de
+# cortarlas por el margen: la plantilla por defecto de pandoc no activa
+# "breaklines" en el entorno Highlighting. Los bloques sin lenguaje usan el
+# entorno "verbatim" normal y necesitan su propio arreglo.
+cat > "$header" <<'EOF'
+\usepackage{fvextra}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
+\renewenvironment{verbatim}{\VerbatimEnvironment\begin{Verbatim}[breaklines=true,breakanywhere=true]}{\end{Verbatim}}
+EOF
+printf 'lang: es\n' > "$defaults"
+
+# Por defecto sin fecha: \date{} evita que LaTeX imprima \today.
+if [[ -n "$date" ]]; then
+  pandoc_args+=(-M "date=$date")
+elif ! $with_date; then
+  printf '%s\n' '\date{}' >> "$header"
+  pandoc_args+=(-M 'date=')
+fi
+$no_author && pandoc_args+=(-M 'author=')
+[[ -n "$author" ]]   && pandoc_args+=(-M "author=$author")
+[[ -n "$title" ]]    && pandoc_args+=(-M "title=$title")
+$no_pages && printf '%s\n' '\pagestyle{empty}' >> "$header"
+$toc      && pandoc_args+=(--toc)
+$numbered && pandoc_args+=(--number-sections)
+[[ -n "$margin" ]]   && pandoc_args+=(-V "geometry:margin=$margin")
+[[ -n "$fontsize" ]] && pandoc_args+=(-V "fontsize=${fontsize}pt")
+
+# Bloques ```mermaid: mmdc genera una copia del .md con cada bloque
+# sustituido por un PDF vectorial. Todo va al directorio temporal.
+source_md=$input
+if grep -qE '^[[:space:]]*```mermaid' "$input"; then
+  if ! command -v mmdc >/dev/null 2>&1; then
+    printf 'md2pdf: el documento tiene diagramas Mermaid y falta mmdc; ejecuta install.sh\n' >&2
+    exit 127
+  fi
+  source_md="$tmp/md2pdf.md"
+  # Ubuntu 23.10+ bloquea el sandbox del Chromium de puppeteer (AppArmor).
+  printf '{"args":["--no-sandbox"]}\n' > "$tmp/puppeteer.json"
+  if ! mmdc -i "$input" -o "$source_md" -e pdf -f -p "$tmp/puppeteer.json" > "$tmp/mmdc.log" 2>&1; then
+    printf 'md2pdf: mmdc no pudo generar los diagramas:\n' >&2
+    cat "$tmp/mmdc.log" >&2
+    exit 1
+  fi
+  # mmdc pone "diagram" como texto alternativo y pandoc lo imprimiría como
+  # pie de figura.
+  sed -i 's|!\[diagram\](\./md2pdf-|![](./md2pdf-|g' "$source_md"
+  pandoc_args+=(--resource-path ".:$tmp")
+fi
+
+pandoc "$source_md" -o "$output" --pdf-engine=xelatex -H "$header" \
+  --metadata-file "$defaults" "${pandoc_args[@]}"
+printf 'PDF generado: %s\n' "$output"

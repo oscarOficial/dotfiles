@@ -19,11 +19,24 @@ info() { printf '\n\033[1;36m==> %s\033[0m\n' "$1"; }
 # --- Paquetes ----------------------------------------------------------------
 info "Instalando paquetes"
 sudo apt update
-sudo apt install -y git curl unzip make gcc ripgrep fd-find xclip tmux fontconfig
+# curl hace falta antes para añadir el repositorio de Node.js 22 (NodeSource)
+sudo apt install -y curl ca-certificates
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y git unzip make gcc ripgrep fd-find xclip tmux fontconfig nodejs \
+  libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcairo2 libcups2 \
+  libgbm1 libnspr4 libnss3 libpango-1.0-0 libx11-xcb1 libxcomposite1 \
+  libxdamage1 libxfixes3 libxkbcommon0 libxrandr2
+# md2pdf (Markdown a PDF): pandoc + XeLaTeX. latex-extra trae fvextra.
+sudo apt install -y pandoc texlive-xetex texlive-latex-extra texlive-lang-spanish lmodern
 
 mkdir -p "$HOME/.local/bin"
 # En Ubuntu fd se llama fdfind
 ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+
+# --- Mermaid CLI (md2pdf lo usa para los bloques ```mermaid) ------------------
+info "Instalando Mermaid CLI"
+# --allow-scripts: sin él, npm reciente no descarga el Chromium de puppeteer.
+npm install --global --prefix "$HOME/.local" --allow-scripts=puppeteer @mermaid-js/mermaid-cli@11
 
 # tree-sitter CLI: del repositorio si existe, si no el binario oficial
 if ! sudo apt install -y tree-sitter-cli 2>/dev/null; then
@@ -68,6 +81,8 @@ link() {
 info "Enlazando dotfiles"
 link "$DOTFILES/nvim"             "$HOME/.config/nvim"
 link "$DOTFILES/linux/.tmux.conf" "$HOME/.tmux.conf"
+chmod +x "$DOTFILES/linux/md2pdf"
+link "$DOTFILES/linux/md2pdf"     "$HOME/.local/bin/md2pdf"
 [ -f "$DOTFILES/linux/.bashrc" ] && link "$DOTFILES/linux/.bashrc" "$HOME/.bashrc"
 
 # Asegura ~/.local/bin en el PATH
@@ -77,4 +92,5 @@ fi
 
 info "Listo"
 echo "Abre una terminal nueva y ejecuta: nvim   (la primera vez descarga los plugins)"
+echo "Markdown a PDF (con diagramas Mermaid): md2pdf apuntes.md"
 $IS_WSL || echo "Selecciona 'JetBrainsMono Nerd Font' en tu terminal para ver los iconos."

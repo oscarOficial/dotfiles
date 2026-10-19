@@ -29,7 +29,9 @@ $apps = @(
     "Python.Python.3.14"
     "7zip.7zip"
     "voidtools.Everything"
-
+    "OpenJS.NodeJS.LTS"
+    "JohnMacFarlane.Pandoc"            # md2pdf (función del perfil de PowerShell)
+    "MiKTeX.MiKTeX"                    # xelatex, para md2pdf
     # Virtualización
     "Oracle.VirtualBox"
 
@@ -70,9 +72,40 @@ if (Test-Path $choco) {
     $fallidas += "Dependencias de Neovim (no se encontró Chocolatey)"
 }
 
+# --- Mermaid CLI (md2pdf lo usa para los bloques ```mermaid) ----------------
+Write-Host "`n==> Instalando Mermaid CLI" -ForegroundColor Cyan
+$npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
+if (-not $npm) {
+    $npmPath = @(
+        "$env:ProgramFiles\nodejs\npm.cmd"
+        "$env:LOCALAPPDATA\Programs\nodejs\npm.cmd"
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+} else {
+    $npmPath = $npm.Source
+}
+if ($npmPath) {
+    # --allow-scripts: sin él, npm reciente no descarga el Chromium de puppeteer.
+    & $npmPath install --global --allow-scripts=puppeteer @mermaid-js/mermaid-cli@11
+    if ($LASTEXITCODE -ne 0) { $fallidas += "Mermaid CLI (npm)" }
+} else {
+    $fallidas += "Mermaid CLI (no se encontró npm; abre una terminal nueva y vuelve a ejecutar)"
+}
+
 # En Windows, tree-sitter busca el compilador de Visual Studio (cl.exe).
 # Con esto usa gcc (instalado arriba con mingw) para compilar los parsers de Neovim.
 [Environment]::SetEnvironmentVariable("CC", "gcc", "User")
+
+# --- MiKTeX: instalar sin preguntar los paquetes LaTeX que falten ----------
+# md2pdf usa paquetes (fvextra, etc.) que MiKTeX descarga la primera vez. Por
+# defecto abre una ventana pidiendo permiso por cada uno.
+$initexmf = "$env:LOCALAPPDATA\Programs\MiKTeX\miktex\bin\x64\initexmf.exe",
+            "$env:ProgramFiles\MiKTeX\miktex\bin\x64\initexmf.exe" |
+            Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($initexmf) {
+    & $initexmf --set-config-value "[MPM]AutoInstall=1"
+} else {
+    $fallidas += "MiKTeX (no se encontró initexmf para activar AutoInstall)"
+}
 
 # --- Ghidra (no está en winget: se descarga la última versión de GitHub) ---
 Write-Host "`n==> Instalando Ghidra" -ForegroundColor Cyan

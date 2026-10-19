@@ -7,7 +7,10 @@ dotfiles/
 ├── nvim/               Neovim (kickstart.nvim), común a los dos sistemas
 │   └── lua/custom/plugins/os.lua   ajustes por sistema (shell, portapapeles WSL)
 ├── linux/.tmux.conf    tmux (solo Linux/WSL)
+├── linux/md2pdf        Markdown a PDF (mismo comando que en PowerShell)
 ├── windows/apps.ps1    instala las aplicaciones en un Windows nuevo
+├── windows/check.ps1   comprueba que todo lo de apps.ps1 está instalado
+├── windows/profile.ps1 perfil de PowerShell (función md2pdf: Markdown a PDF)
 ├── install.sh          Ubuntu: instala Neovim, tmux y dependencias, y enlaza la config
 └── install.ps1         Windows: enlaza la config
 ```
@@ -50,6 +53,46 @@ y el cambio ya está en el repo. Solo falta `git commit` y `git push`.
 - **Ubuntu:** añade el paquete a la línea `sudo apt install -y ...` de `install.sh`.
 - **Su configuración:** mueve el archivo al repo (`linux/` o `windows/`) y añade
   una línea `link` en `install.sh` o `Link` en `install.ps1`.
+
+## Markdown a PDF con diagramas (md2pdf)
+
+El mismo comando en Windows (PowerShell) y en Ubuntu/WSL (Bash):
+
+```text
+md2pdf apuntes.md
+md2pdf apuntes.md -o entrega.pdf
+```
+
+Usa pandoc + XeLaTeX y lee título, autor e idioma del YAML del `.md`. Las
+opciones cortas (`-o -a -d -t -m -f`) son iguales en los dos sistemas; los
+interruptores cambian de estilo: `-Toc -Numbered -NoAuthor -WithDate -NoPages`
+en PowerShell y `--toc --numbered --no-author --with-date --no-pages` en Bash.
+`md2pdf -h` muestra la ayuda.
+
+Los diagramas se escriben como un bloque de código `mermaid` dentro del propio
+`.md` y `md2pdf` los convierte en diagramas vectoriales al generar el PDF:
+
+````markdown
+```mermaid
+flowchart LR
+  A[Identificar] --> B[Analizar] --> C[Tratar]
+```
+````
+
+`windows/apps.ps1` e `install.sh` instalan lo necesario: pandoc, XeLaTeX,
+Node.js/npm y Mermaid CLI (`mmdc`). En Ubuntu, Node.js 22 LTS viene de NodeSource.
+
+Para una imagen suelta, guarda la definición en un `.mmd` y usa `mmdc`
+directamente (`-f` ajusta el PDF al diagrama, `-s 3` da resolución al PNG):
+
+```text
+mmdc -i diagrama.mmd -o diagrama.pdf -f
+mmdc -i diagrama.mmd -o diagrama.png -s 3
+```
+
+Después de instalar en Windows, abre una terminal nueva para que `mmdc` quede
+disponible en el `PATH`. En Ubuntu/WSL, abre una terminal nueva si `~/.local/bin`
+no estaba todavía en el `PATH`.
 
 ## Claves SSH en Windows
 
